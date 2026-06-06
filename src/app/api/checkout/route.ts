@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { stripe } from "@/lib/stripe";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { priceFor } from "@/lib/format";
 
 interface Line { beatId: string; tierId: string; }
 
@@ -12,11 +11,10 @@ export async function POST(req: NextRequest) {
     const admin = createAdminClient();
     const site = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
 
-    // Re-price everything server-side (never trust the client)
-    const ids = [...new Set(items.map(i => i.beatId))];
-    const tierIds = [...new Set(items.map(i => i.tierId))];
-    const { data: beats } = await admin.from("products").select("id,title,base_price_cents,status").in("id", ids);
-    const { data: tiers } = await admin.from("license_tiers").select("id,name,multiplier,is_exclusive").in("id", tierIds);
+    const ids = [...new Set(items.map((i) => i.beatId))];
+    const tierIds = [...new Set(items.map((i) => i.tierId))];
+    const { data: beats } = await admin.from("products").select("id,title,status").in("id", ids);
+    const { data: tiers } = await admin.from("license_tiers").select("id,name,price_cents,is_exclusive").in("id", tierIds);
     if (!beats || !tiers) return NextResponse.json({ error: "Pricing failed" }, { status: 500 });
 
     let pct = 0;
@@ -25,19 +23,21 @@ export async function POST(req: NextRequest) {
       pct = p?.percent_off ?? 0;
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const line_items: any[] = [];
     const meta: { beatId: string; tierId: string; cents: number }[] = [];
     for (const it of items) {
-      const b = beats.find(x => x.id === it.beatId); const t = tiers.find(x => x.id === it.tierId);
+      const b = beats.find((x) => x.id === it.beatId);
+      const t = tiers.find((x) => x.id === it.tierId);
       if (!b || !t) return NextResponse.json({ error: "Unknown item" }, { status: 400 });
       if (b.status === "sold") return NextResponse.json({ error: `${b.title} is no longer available` }, { status: 409 });
-      let cents = priceFor(b.base_price_cents, t.multiplier);
-      if (pct) cents = Math.round(cents * (1 - pct/100));
+      if (t.price_cents == null) return NextResponse.json({ error: `${t.name} is on request — please contact us` }, { status: 400 });
+      let cents = t.price_cents as number;
+      if (pct) cents = Math.round(cents * (1 - pct / 100));
       meta.push({ beatId: b.id, tierId: t.id, cents });
       line_items.push({
         quantity: 1,
-        price_data: { currency: "eur", unit_amount: cents,
-          product_data: { name: `${b.title} — ${t.name}` } },
+        price_data: { currency: "eur", unit_amount: cents, product_data: { name: `${b.title} — ${t.name}` } },
       });
     }
 
@@ -46,11 +46,11 @@ export async function POST(req: NextRequest) {
       line_items,
       success_url: `${site}/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${site}/`,
-      automatic_tax: { enabled: false }, // active Stripe Tax + set to true when registered
+      automatic_tax: { enabled: false },
       metadata: { cart: JSON.stringify(meta).slice(0, 4900) },
     });
     return NextResponse.json({ url: session.url });
-  } catch (e: any) {
-    return NextResponse.json({ error: e?.message || "Checkout error" }, { status: 500 });
+  } catch (e: unknown) {
+    return NextResponse.json({ error: e instanceof Error ? e.message : "Checkout error" }, { status: 500 });
   }
 }

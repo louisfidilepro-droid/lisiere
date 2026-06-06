@@ -13,18 +13,19 @@ export interface Beat {
   featured: boolean;
   tags: string[] | null;
   description: string | null;
-  preview_path: string | null;   // Supabase Storage path (public preview)
+  preview_path: string | null;
   cover_url: string | null;
-  base_price_cents: number;       // price of the Basic tier; others scale by multiplier
+  base_price_cents: number;
   created_at: string;
 }
 
 export interface LicenseTier {
   id: string;
   name: string;
-  multiplier: number;     // price = base_price_cents * multiplier
-  files: string;          // human-readable list of delivered files
-  rights: string;         // " · " separated bullet points
+  multiplier: number;
+  price_cents: number | null;   // fixed price; null = "on request" (exclusive)
+  files: string;
+  rights: string;               // " · " separated bullet points
   is_exclusive: boolean;
   sort_order: number;
   active: boolean;

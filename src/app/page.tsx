@@ -21,7 +21,8 @@ async function getData() {
 
 export default async function Home() {
   const { beats, tiers, sb } = await getData();
-  const minMult = tiers.length ? Math.min(...tiers.map(t=>t.multiplier)) : 1;
+  const paid = tiers.map(t=>t.price_cents).filter((n): n is number => n != null);
+  const fromCents = paid.length ? Math.min(...paid) : 0;
   const pub = (path: string|null) => (path && sb) ? sb.storage.from("previews").getPublicUrl(path).data.publicUrl : null;
   const clientBeats = beats.map(b => ({ ...b, previewUrl: pub(b.preview_path), coverUrl: b.cover_url }));
 
@@ -36,7 +37,7 @@ export default async function Home() {
         ) : (
           <div className="grid">
             {clientBeats.map((b,i)=>(
-              <BeatCard key={b.id} beat={b} fromCents={Math.round(b.base_price_cents*minMult)} delay={(i%8)*0.05} />
+              <BeatCard key={b.id} beat={b} fromCents={fromCents} delay={(i%8)*0.05} />
             ))}
           </div>
         )}
