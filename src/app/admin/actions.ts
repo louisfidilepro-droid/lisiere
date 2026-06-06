@@ -10,25 +10,17 @@ async function guard() {
   if (!user || !isAdmin(user.email)) throw new Error("Not authorised");
 }
 const slugify = (s: string) =>
-  s.toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"") || ("beat-"+Date.now());
+  s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || ("beat-" + Date.now());
 
-async function uploadFile(bucket: string, file: File, prefix: string): Promise<string|null> {
-  if (!file || file.size === 0) return null;
-  const admin = createAdminClient();
-  const ext = file.name.split(".").pop() || "bin";
-  const path = `${prefix}/${Date.now()}.${ext}`;
-  const buf = Buffer.from(await file.arrayBuffer());
-  const { error } = await admin.storage.from(bucket).upload(path, buf, { contentType: file.type || undefined, upsert: true });
-  if (error) throw new Error(`Upload (${bucket}): ${error.message}`);
-  return path;
-}
-
+/** Files are uploaded client-side straight to Supabase Storage (no Vercel body limit).
+ *  This action only receives the resulting storage paths as strings. */
 export async function saveBeat(formData: FormData) {
   await guard();
   const admin = createAdminClient();
   const id = (formData.get("id") as string) || "";
   const title = (formData.get("title") as string)?.trim() || "Untitled";
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const row: any = {
     title,
     type: (formData.get("type") as string) || "instrumental",
@@ -40,13 +32,13 @@ export async function saveBeat(formData: FormData) {
     cover_url: (formData.get("cover_url") as string) || null,
     description: (formData.get("description") as string) || null,
     base_price_cents: Math.round(Number(formData.get("base_price") || 29) * 100),
-    tags: ((formData.get("tags") as string) || "").split(",").map(s=>s.trim()).filter(Boolean),
+    tags: ((formData.get("tags") as string) || "").split(",").map((s) => s.trim()).filter(Boolean),
   };
 
-  const preview = formData.get("preview_file") as File | null;
-  const master  = formData.get("master_file") as File | null;
-  if (preview && preview.size) row.preview_path = await uploadFile("previews", preview, "preview");
-  if (master && master.size)  row.download_path = await uploadFile("masters", master, "master");
+  const previewPath = (formData.get("preview_path") as string) || "";
+  const downloadPath = (formData.get("download_path") as string) || "";
+  if (previewPath) row.preview_path = previewPath;
+  if (downloadPath) row.download_path = downloadPath;
 
   if (id) {
     await admin.from("products").update(row).eq("id", id);
@@ -54,22 +46,16 @@ export async function saveBeat(formData: FormData) {
     row.slug = slugify(title);
     await admin.from("products").insert(row);
   }
-  revalidatePath("/admin"); revalidatePath("/");
-  redirect("/admin");
+  revalidatePath("/admin");
+  revalidatePath("/");
 }
 
 export async function deleteBeat(formData: FormData) {
   await guard();
   const admin = createAdminClient();
   await admin.from("products").delete().eq("id", formData.get("id") as string);
-  revalidatePath("/admin"); revalidatePath("/");
-}
-
-export async function setStatus(formData: FormData) {
-  await guard();
-  const admin = createAdminClient();
-  await admin.from("products").update({ status: formData.get("status") }).eq("id", formData.get("id"));
-  revalidatePath("/admin"); revalidatePath("/");
+  revalidatePath("/admin");
+  revalidatePath("/");
 }
 
 export async function signOut() {
