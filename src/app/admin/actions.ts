@@ -12,8 +12,20 @@ async function guard() {
 const slugify = (s: string) =>
   s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || ("beat-" + Date.now());
 
-/** Files are uploaded client-side straight to Supabase Storage (no Vercel body limit).
- *  This action only receives the resulting storage paths as strings. */
+/** Admin-only: create a one-time signed upload URL (service role bypasses RLS).
+ *  The browser then uploads the file straight to Storage via uploadToSignedUrl. */
+export async function createUploadUrl(bucket: "previews" | "masters", ext: string) {
+  await guard();
+  const admin = createAdminClient();
+  const prefix = bucket === "masters" ? "master" : "preview";
+  const safeExt = (ext || "bin").replace(/[^a-z0-9]/gi, "").slice(0, 8) || "bin";
+  const path = `${prefix}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${safeExt}`;
+  const { data, error } = await admin.storage.from(bucket).createSignedUploadUrl(path);
+  if (error) throw new Error(error.message);
+  return { path: data.path, token: data.token };
+}
+
+/** Files are uploaded client-side via signed URLs; this only stores the paths. */
 export async function saveBeat(formData: FormData) {
   await guard();
   const admin = createAdminClient();

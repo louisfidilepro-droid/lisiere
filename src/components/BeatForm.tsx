@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { saveBeat } from "@/app/admin/actions";
+import { saveBeat, createUploadUrl } from "@/app/admin/actions";
 import { createClient } from "@/lib/supabase/browser";
 import type { Beat } from "@/lib/types";
 
@@ -26,17 +26,17 @@ export default function BeatForm({ beat }: { beat?: Beat | null }) {
       fd.delete("preview_file");
       fd.delete("master_file");
 
-      const upload = async (bucket: string, file: File, prefix: string) => {
+      const upload = async (bucket: "previews" | "masters", file: File) => {
         const ext = file.name.split(".").pop() || "bin";
-        const path = `${prefix}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
         setMsg(`Uploading ${file.name}...`);
-        const { error } = await sb.storage.from(bucket).upload(path, file, { upsert: true });
+        const { path, token } = await createUploadUrl(bucket, ext);
+        const { error } = await sb.storage.from(bucket).uploadToSignedUrl(path, token, file);
         if (error) throw new Error(error.message);
         return path;
       };
 
-      if (previewFile && previewFile.size) fd.set("preview_path", await upload("previews", previewFile, "preview"));
-      if (masterFile && masterFile.size) fd.set("download_path", await upload("masters", masterFile, "master"));
+      if (previewFile && previewFile.size) fd.set("preview_path", await upload("previews", previewFile));
+      if (masterFile && masterFile.size) fd.set("download_path", await upload("masters", masterFile));
 
       setMsg("Saving...");
       await saveBeat(fd);
