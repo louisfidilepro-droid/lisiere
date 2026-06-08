@@ -11,6 +11,8 @@ interface Store {
   // cart
   items: CartItem[]; addItem: (i: CartItem) => void; removeItem: (idx: number) => void; clear: () => void;
   cartOpen: boolean; setCartOpen: (v: boolean) => void;
+  // suno generator
+  genOpen: boolean; setGenOpen: (v: boolean) => void;
 }
 const Ctx = createContext<Store | null>(null);
 export const useStore = () => {
@@ -24,6 +26,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [items, setItems] = useState<CartItem[]>([]);
   const [cartOpen, setCartOpen] = useState(false);
+  const [genOpen, setGenOpen] = useState(false);
 
   useEffect(() => {
     try { const s = localStorage.getItem("lisiere_cart"); if (s) setItems(JSON.parse(s)); } catch {}
@@ -42,7 +45,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const clear = useCallback(() => setItems([]), []);
 
   return (
-    <Ctx.Provider value={{ now, isPlaying, play, togglePlay, items, addItem, removeItem, clear, cartOpen, setCartOpen }}>
+    <Ctx.Provider value={{ now, isPlaying, play, togglePlay, items, addItem, removeItem, clear, cartOpen, setCartOpen, genOpen, setGenOpen }}>
       {children}
     </Ctx.Provider>
   );
