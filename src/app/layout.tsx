@@ -5,6 +5,7 @@ import Chrome from "@/components/Chrome";
 import Nav from "@/components/Nav";
 import Player from "@/components/Player";
 import Cart from "@/components/Cart";
+import PromptTool from "@/components/PromptTool";
 
 export const metadata: Metadata = {
   title: "Lisière — Instrumentals",
@@ -27,6 +28,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           {children}
           <Player />
           <Cart />
+          <PromptTool />
         </StoreProvider>
       </body>
     </html>
