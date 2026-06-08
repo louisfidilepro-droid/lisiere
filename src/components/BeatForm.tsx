@@ -5,40 +5,78 @@ import { saveBeat, createUploadUrl } from "@/app/admin/actions";
 import { createClient } from "@/lib/supabase/browser";
 import type { Beat } from "@/lib/types";
 
-// Generate an on-brand cover (dark + violet + grain + title) when none is provided.
+// On-brand cover generator: dark + violet light pools, smoke wisps, fibrous streaks,
+// vignette, film grain and a softly glowing title. Sober but textured.
 async function generateCover(title: string): Promise<Blob> {
   const S = 1000;
-  const c = document.createElement("canvas");
-  c.width = S; c.height = S;
+  const c = document.createElement("canvas"); c.width = S; c.height = S;
   const x = c.getContext("2d")!;
-  x.fillStyle = "#06050a"; x.fillRect(0, 0, S, S);
-  const g1 = x.createRadialGradient(420, 360, 60, 460, 440, 780);
-  g1.addColorStop(0, "rgba(157,107,255,0.55)");
-  g1.addColorStop(0.45, "rgba(122,77,255,0.16)");
-  g1.addColorStop(1, "rgba(6,5,10,0)");
-  x.fillStyle = g1; x.fillRect(0, 0, S, S);
-  const g2 = x.createRadialGradient(820, 840, 40, 820, 840, 520);
-  g2.addColorStop(0, "rgba(42,24,80,0.75)");
-  g2.addColorStop(1, "rgba(6,5,10,0)");
-  x.fillStyle = g2; x.fillRect(0, 0, S, S);
-  // grain
+  const rnd = (a: number, b: number) => a + Math.random() * (b - a);
+
+  // base
+  const base = x.createLinearGradient(0, 0, S, S);
+  base.addColorStop(0, "#0a0712"); base.addColorStop(1, "#050409");
+  x.fillStyle = base; x.fillRect(0, 0, S, S);
+
+  // broad light pools
+  const pools: [number, number, number, string, number][] = [
+    [430, 360, 560, "157,107,255", 0.30],
+    [810, 770, 540, "42,24,80", 0.55],
+    [180, 840, 460, "122,77,255", 0.16],
+  ];
+  for (const [cx, cy, r, col, a] of pools) {
+    const g = x.createRadialGradient(cx, cy, 0, cx, cy, r);
+    g.addColorStop(0, `rgba(${col},${a})`); g.addColorStop(1, "rgba(0,0,0,0)");
+    x.fillStyle = g; x.fillRect(0, 0, S, S);
+  }
+
+  // smoke wisps (blurred, stretched, screen-blended)
+  x.globalCompositeOperation = "screen";
+  for (let i = 0; i < 24; i++) {
+    const cx = rnd(0, S), cy = rnd(0, S), r = rnd(120, 340);
+    const col = Math.random() < 0.6 ? "140,100,255" : "150,142,170";
+    x.filter = `blur(${rnd(50, 95)}px)`;
+    const g = x.createRadialGradient(cx, cy, 0, cx, cy, r);
+    g.addColorStop(0, `rgba(${col},${rnd(0.04, 0.12)})`); g.addColorStop(1, "rgba(0,0,0,0)");
+    x.save(); x.translate(cx, cy); x.rotate(rnd(0, Math.PI)); x.scale(rnd(1, 2.4), rnd(0.35, 0.7)); x.translate(-cx, -cy);
+    x.fillStyle = g; x.beginPath(); x.arc(cx, cy, r, 0, 7); x.fill(); x.restore();
+  }
+  // fine fibrous streaks
+  x.filter = "blur(2px)";
+  for (let i = 0; i < 36; i++) {
+    x.strokeStyle = `rgba(150,120,255,${rnd(0.015, 0.05)})`; x.lineWidth = rnd(0.5, 1.6);
+    x.beginPath(); let px = rnd(0, S), py = rnd(0, S); x.moveTo(px, py);
+    for (let k = 0; k < 6; k++) { px += rnd(-90, 90); py += rnd(-50, 50); x.lineTo(px, py); }
+    x.stroke();
+  }
+  x.filter = "none"; x.globalCompositeOperation = "source-over";
+
+  // vignette
+  const vg = x.createRadialGradient(S / 2, S * 0.46, S * 0.25, S / 2, S / 2, S * 0.82);
+  vg.addColorStop(0, "rgba(0,0,0,0)"); vg.addColorStop(1, "rgba(3,2,7,0.9)");
+  x.fillStyle = vg; x.fillRect(0, 0, S, S);
+
+  // film grain
   const img = x.getImageData(0, 0, S, S); const d = img.data;
-  for (let i = 0; i < d.length; i += 4) { const n = Math.random() * 26 - 13; d[i] += n; d[i + 1] += n; d[i + 2] += n; }
+  for (let i = 0; i < d.length; i += 4) { const n = Math.random() * 38 - 19; d[i] += n; d[i + 1] += n; d[i + 2] += n; }
   x.putImageData(img, 0, 0);
-  // title
-  try { await (document as any).fonts.load("500 120px 'Cormorant Garamond'"); } catch {}
-  x.fillStyle = "#ece8f4"; x.textAlign = "center"; x.textBaseline = "middle";
+
+  // title (glowing)
+  try { await (document as unknown as { fonts: { load: (f: string) => Promise<unknown> } }).fonts.load("500 150px 'Cormorant Garamond'"); } catch {}
+  x.textAlign = "center"; x.textBaseline = "middle";
   const words = (title || "Lisiere").trim().split(/\s+/);
   const lines: string[] = []; let cur = "";
   for (const w of words) { if ((cur + " " + w).trim().length > 12) { if (cur) lines.push(cur); cur = w; } else cur = (cur + " " + w).trim(); }
   if (cur) lines.push(cur);
-  let size = lines.length > 2 ? 110 : 150;
+  const size = lines.length > 2 ? 104 : 150;
   x.font = `500 ${size}px 'Cormorant Garamond', Georgia, serif`;
   const lh = size * 1.05; const startY = S / 2 - (lines.length - 1) * lh / 2;
+  x.shadowColor = "rgba(122,77,255,0.55)"; x.shadowBlur = 38; x.fillStyle = "#f1edf8";
   lines.forEach((ln, i) => x.fillText(ln, S / 2, startY + i * lh));
-  x.fillStyle = "rgba(168,160,189,0.85)";
-  x.font = "400 26px 'DM Sans', sans-serif";
-  x.fillText("L I S I E R E", S / 2, S - 90);
+  x.shadowBlur = 0;
+  x.fillStyle = "rgba(182,172,206,0.82)"; x.font = "400 24px 'DM Sans', sans-serif";
+  x.fillText("L I S I E R E", S / 2, S - 92);
+
   return await new Promise<Blob>((res) => c.toBlob((b) => res(b!), "image/png", 0.92));
 }
 
@@ -79,7 +117,6 @@ export default function BeatForm({ beat }: { beat?: Beat | null }) {
         fd.set("download_path", await upload("masters", masterFile, masterFile.name.split(".").pop() || "zip"));
       }
 
-      // Cover: uploaded file > typed URL > auto-generated from title
       let coverUrl = ((fd.get("cover_url") as string) || "").trim();
       if (coverFile && coverFile.size) {
         setMsg("Uploading cover...");
@@ -93,7 +130,7 @@ export default function BeatForm({ beat }: { beat?: Beat | null }) {
 
       setMsg("Saving...");
       await saveBeat(fd);
-      setMsg("Saved ✓");
+      setMsg("Saved");
       setBusy(false);
       if (!b) form.reset();
       router.push("/admin");
