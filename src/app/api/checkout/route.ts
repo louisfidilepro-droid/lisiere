@@ -13,7 +13,7 @@ export async function POST(req: NextRequest) {
 
     const ids = [...new Set(items.map((i) => i.beatId))];
     const tierIds = [...new Set(items.map((i) => i.tierId))];
-    const { data: beats } = await admin.from("products").select("id,title,status").in("id", ids);
+    const { data: beats } = await admin.from("products").select("id,title,status,prices").in("id", ids);
     const { data: tiers } = await admin.from("license_tiers").select("id,name,price_cents,is_exclusive").in("id", tierIds);
     if (!beats || !tiers) return NextResponse.json({ error: "Pricing failed" }, { status: 500 });
 
@@ -31,8 +31,10 @@ export async function POST(req: NextRequest) {
       const t = tiers.find((x) => x.id === it.tierId);
       if (!b || !t) return NextResponse.json({ error: "Unknown item" }, { status: 400 });
       if (b.status === "sold") return NextResponse.json({ error: `${b.title} is no longer available` }, { status: 409 });
-      if (t.price_cents == null) return NextResponse.json({ error: `${t.name} is on request — please contact us` }, { status: 400 });
-      let cents = t.price_cents as number;
+      const override = (b as { prices?: Record<string, number> | null }).prices?.[t.id];
+      const baseCents = typeof override === "number" ? override : t.price_cents;
+      if (baseCents == null) return NextResponse.json({ error: `${t.name} is on request — please contact us` }, { status: 400 });
+      let cents = baseCents;
       if (pct) cents = Math.round(cents * (1 - pct / 100));
       meta.push({ beatId: b.id, tierId: t.id, cents });
       line_items.push({

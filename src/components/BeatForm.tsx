@@ -3,7 +3,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { saveBeat, createUploadUrl } from "@/app/admin/actions";
 import { createClient } from "@/lib/supabase/browser";
-import type { Beat } from "@/lib/types";
+import type { Beat, LicenseTier } from "@/lib/types";
 
 // On-brand cover generator: dark + violet light pools, smoke wisps, fibrous streaks,
 // vignette, film grain and a softly glowing title. Sober but textured.
@@ -12,25 +12,17 @@ async function generateCover(title: string): Promise<Blob> {
   const c = document.createElement("canvas"); c.width = S; c.height = S;
   const x = c.getContext("2d")!;
   const rnd = (a: number, b: number) => a + Math.random() * (b - a);
-
-  // base
   const base = x.createLinearGradient(0, 0, S, S);
   base.addColorStop(0, "#0a0712"); base.addColorStop(1, "#050409");
   x.fillStyle = base; x.fillRect(0, 0, S, S);
-
-  // broad light pools
   const pools: [number, number, number, string, number][] = [
-    [430, 360, 560, "157,107,255", 0.30],
-    [810, 770, 540, "42,24,80", 0.55],
-    [180, 840, 460, "122,77,255", 0.16],
+    [430, 360, 560, "157,107,255", 0.30], [810, 770, 540, "42,24,80", 0.55], [180, 840, 460, "122,77,255", 0.16],
   ];
   for (const [cx, cy, r, col, a] of pools) {
     const g = x.createRadialGradient(cx, cy, 0, cx, cy, r);
     g.addColorStop(0, `rgba(${col},${a})`); g.addColorStop(1, "rgba(0,0,0,0)");
     x.fillStyle = g; x.fillRect(0, 0, S, S);
   }
-
-  // smoke wisps (blurred, stretched, screen-blended)
   x.globalCompositeOperation = "screen";
   for (let i = 0; i < 24; i++) {
     const cx = rnd(0, S), cy = rnd(0, S), r = rnd(120, 340);
@@ -41,7 +33,6 @@ async function generateCover(title: string): Promise<Blob> {
     x.save(); x.translate(cx, cy); x.rotate(rnd(0, Math.PI)); x.scale(rnd(1, 2.4), rnd(0.35, 0.7)); x.translate(-cx, -cy);
     x.fillStyle = g; x.beginPath(); x.arc(cx, cy, r, 0, 7); x.fill(); x.restore();
   }
-  // fine fibrous streaks
   x.filter = "blur(2px)";
   for (let i = 0; i < 36; i++) {
     x.strokeStyle = `rgba(150,120,255,${rnd(0.015, 0.05)})`; x.lineWidth = rnd(0.5, 1.6);
@@ -50,18 +41,12 @@ async function generateCover(title: string): Promise<Blob> {
     x.stroke();
   }
   x.filter = "none"; x.globalCompositeOperation = "source-over";
-
-  // vignette
   const vg = x.createRadialGradient(S / 2, S * 0.46, S * 0.25, S / 2, S / 2, S * 0.82);
   vg.addColorStop(0, "rgba(0,0,0,0)"); vg.addColorStop(1, "rgba(3,2,7,0.9)");
   x.fillStyle = vg; x.fillRect(0, 0, S, S);
-
-  // film grain
   const img = x.getImageData(0, 0, S, S); const d = img.data;
   for (let i = 0; i < d.length; i += 4) { const n = Math.random() * 38 - 19; d[i] += n; d[i + 1] += n; d[i + 2] += n; }
   x.putImageData(img, 0, 0);
-
-  // title (glowing)
   try { await (document as unknown as { fonts: { load: (f: string) => Promise<unknown> } }).fonts.load("500 150px 'Cormorant Garamond'"); } catch {}
   x.textAlign = "center"; x.textBaseline = "middle";
   const words = (title || "Lisiere").trim().split(/\s+/);
@@ -76,15 +61,15 @@ async function generateCover(title: string): Promise<Blob> {
   x.shadowBlur = 0;
   x.fillStyle = "rgba(182,172,206,0.82)"; x.font = "400 24px 'DM Sans', sans-serif";
   x.fillText("L I S I E R E", S / 2, S - 92);
-
   return await new Promise<Blob>((res) => c.toBlob((b) => res(b!), "image/png", 0.92));
 }
 
-export default function BeatForm({ beat }: { beat?: Beat | null }) {
+export default function BeatForm({ beat, tiers }: { beat?: Beat | null; tiers: LicenseTier[] }) {
   const b = beat;
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState("");
+  const priceable = tiers.filter((t) => !t.is_exclusive);
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -100,6 +85,15 @@ export default function BeatForm({ beat }: { beat?: Beat | null }) {
       const coverFile = (form.elements.namedItem("cover_file") as HTMLInputElement)?.files?.[0];
       fd.delete("preview_file"); fd.delete("master_file"); fd.delete("cover_file");
 
+      // Per-tier price overrides -> JSON { tierId: cents }
+      const prices: Record<string, number> = {};
+      for (const t of priceable) {
+        const v = (fd.get(`price_${t.id}`) as string || "").trim();
+        fd.delete(`price_${t.id}`);
+        if (v !== "") { const cents = Math.round(parseFloat(v.replace(",", ".")) * 100); if (cents > 0) prices[t.id] = cents; }
+      }
+      fd.set("prices", JSON.stringify(prices));
+
       const upload = async (bucket: "previews" | "masters", file: Blob, ext: string) => {
         const { path, token } = await createUploadUrl(bucket, ext);
         const { error } = await sb.storage.from(bucket).uploadToSignedUrl(path, token, file);
@@ -108,24 +102,12 @@ export default function BeatForm({ beat }: { beat?: Beat | null }) {
       };
       const publicUrl = (path: string) => sb.storage.from("previews").getPublicUrl(path).data.publicUrl;
 
-      if (previewFile && previewFile.size) {
-        setMsg(`Uploading ${previewFile.name}...`);
-        fd.set("preview_path", await upload("previews", previewFile, previewFile.name.split(".").pop() || "mp3"));
-      }
-      if (masterFile && masterFile.size) {
-        setMsg(`Uploading ${masterFile.name}...`);
-        fd.set("download_path", await upload("masters", masterFile, masterFile.name.split(".").pop() || "zip"));
-      }
+      if (previewFile && previewFile.size) { setMsg(`Uploading ${previewFile.name}...`); fd.set("preview_path", await upload("previews", previewFile, previewFile.name.split(".").pop() || "mp3")); }
+      if (masterFile && masterFile.size) { setMsg(`Uploading ${masterFile.name}...`); fd.set("download_path", await upload("masters", masterFile, masterFile.name.split(".").pop() || "zip")); }
 
       let coverUrl = ((fd.get("cover_url") as string) || "").trim();
-      if (coverFile && coverFile.size) {
-        setMsg("Uploading cover...");
-        coverUrl = publicUrl(await upload("previews", coverFile, coverFile.name.split(".").pop() || "jpg"));
-      } else if (!coverUrl) {
-        setMsg("Generating cover...");
-        const blob = await generateCover((fd.get("title") as string) || "Lisiere");
-        coverUrl = publicUrl(await upload("previews", blob, "png"));
-      }
+      if (coverFile && coverFile.size) { setMsg("Uploading cover..."); coverUrl = publicUrl(await upload("previews", coverFile, coverFile.name.split(".").pop() || "jpg")); }
+      else if (!coverUrl) { setMsg("Generating cover..."); const blob = await generateCover((fd.get("title") as string) || "Lisiere"); coverUrl = publicUrl(await upload("previews", blob, "png")); }
       fd.set("cover_url", coverUrl);
 
       setMsg("Saving...");
@@ -159,9 +141,28 @@ export default function BeatForm({ beat }: { beat?: Beat | null }) {
             <option value="published">Published</option><option value="draft">Draft</option>
             <option value="hidden">Hidden</option><option value="sold">Sold</option>
           </select></div>
+      </div>
+
+      <div style={{ marginTop: 16, padding: "14px 16px", border: "1px solid var(--line)", borderRadius: 12 }}>
+        <div className="label" style={{ marginBottom: 10 }}>Prix des licences pour ce beat (€) — vide = prix par défaut</div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(150px,1fr))", gap: 12 }}>
+          {priceable.map((t) => (
+            <div className="field" key={t.id} style={{ marginBottom: 0 }}>
+              <label>{t.name.split(" (")[0]}</label>
+              <input name={`price_${t.id}`} type="number" step="1" min="0"
+                defaultValue={b?.prices?.[t.id] != null ? (b.prices[t.id] / 100) : (t.price_cents != null ? t.price_cents / 100 : "")}
+                placeholder={t.price_cents != null ? String(t.price_cents / 100) : ""} />
+            </div>
+          ))}
+        </div>
+        <div style={{ color: "var(--tx-faint)", fontSize: ".78rem", marginTop: 8 }}>Exclusive reste « sur demande ».</div>
+      </div>
+
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginTop: 16 }}>
         <div className="field"><label>Featured</label>
           <label style={{ display: "flex", gap: 8, alignItems: "center", fontSize: ".85rem", color: "var(--tx-dim)", height: 44 }}>
             <input type="checkbox" name="featured" defaultChecked={b?.featured} style={{ width: "auto" }} /> Mettre en avant</label></div>
+        <div className="field"></div>
         <div className="field" style={{ gridColumn: "1/-1" }}><label>Cover image (upload) {b?.cover_url ? "- replace" : "- leave empty to auto-generate"}</label><input name="cover_file" type="file" accept="image/*" /></div>
         <div className="field" style={{ gridColumn: "1/-1" }}><label>...or paste a cover image URL</label><input name="cover_url" defaultValue={b?.cover_url ?? ""} placeholder="https://... (optional)" /></div>
         <div className="field" style={{ gridColumn: "1/-1" }}><label>Tags (comma separated)</label><input name="tags" defaultValue={(b?.tags || []).join(", ")} /></div>

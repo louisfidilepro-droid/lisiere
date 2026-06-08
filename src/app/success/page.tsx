@@ -29,7 +29,10 @@ export default async function Success({ searchParams }: { searchParams: Promise<
       {grants.length>0 ? (
         <div style={{display:"flex",flexDirection:"column",gap:12,maxWidth:420,margin:"0 auto"}}>
           {grants.map(g=>(
-            <a key={g.token} className="btn btn-primary" href={`/api/download/${g.token}`}>Download — {g.title}</a>
+            <div key={g.token} style={{display:"flex",gap:10,flexWrap:"wrap",justifyContent:"center"}}>
+              <a className="btn btn-primary" style={{flex:1,minWidth:200}} href={`/api/download/${g.token}`}>Download — {g.title}</a>
+              <a className="btn btn-ghost" href={`/api/contract/${g.token}`} target="_blank">Licence (PDF)</a>
+            </div>
           ))}
         </div>
       ) : (

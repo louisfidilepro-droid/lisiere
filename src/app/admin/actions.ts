@@ -47,6 +47,8 @@ export async function saveBeat(formData: FormData) {
     tags: ((formData.get("tags") as string) || "").split(",").map((s) => s.trim()).filter(Boolean),
   };
 
+  // per-tier price overrides (JSON: tierId -> cents)
+  try { const p = JSON.parse((formData.get("prices") as string) || "{}"); row.prices = p && typeof p === "object" ? p : {}; } catch { row.prices = {}; }
   const previewPath = (formData.get("preview_path") as string) || "";
   const downloadPath = (formData.get("download_path") as string) || "";
   if (previewPath) row.preview_path = previewPath;

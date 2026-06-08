@@ -2,21 +2,23 @@
 import { useState } from "react";
 import { useStore } from "@/app/store";
 import { euro } from "@/lib/format";
-import type { LicenseTier } from "@/lib/types";
+import { tierPrice } from "@/lib/pricing";
+import type { Beat, LicenseTier } from "@/lib/types";
 
 interface Props {
   beatId: string; slug: string; title: string; meta: string;
-  baseCents: number; coverUrl: string | null; previewUrl: string | null;
+  prices: Beat["prices"]; coverUrl: string | null; previewUrl: string | null;
   tiers: LicenseTier[]; sold: boolean;
 }
-const label = (t: LicenseTier) => (t.price_cents == null ? "Sur demande" : euro(t.price_cents));
 
 export default function ProductBuy(p: Props) {
   const { addItem, play } = useStore();
   const [sel, setSel] = useState(0);
   if (p.sold) return <p style={{ color: "#ff8a8a" }}>This beat was sold exclusively and is no longer available.</p>;
   const t = p.tiers[sel];
-  const onRequest = !t || t.price_cents == null;
+  const price = t ? tierPrice(p.prices, t) : null;
+  const onRequest = price == null;
+  const label = (x: LicenseTier) => { const c = tierPrice(p.prices, x); return c == null ? "Sur demande" : euro(c); };
 
   return (
     <div>
@@ -45,9 +47,9 @@ export default function ProductBuy(p: Props) {
           <button className="btn btn-primary"
             onClick={() => addItem({
               beatId: p.beatId, slug: p.slug, title: p.title, coverUrl: p.coverUrl,
-              tierId: t.id, tierName: t.name, isExclusive: t.is_exclusive, priceCents: t.price_cents as number,
+              tierId: t.id, tierName: t.name, isExclusive: t.is_exclusive, priceCents: price as number,
             })}>
-            Add to cart — {euro(t.price_cents as number)}
+            Add to cart — {euro(price as number)}
           </button>
         )}
       </>}

@@ -2,7 +2,8 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { getUser, isAdmin } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { euro } from "@/lib/format";
-import type { Beat } from "@/lib/types";
+import type { Beat, LicenseTier } from "@/lib/types";
+import { tierPrice } from "@/lib/pricing";
 import BeatForm from "@/components/BeatForm";
 import { deleteBeat, signOut } from "./actions";
 import Link from "next/link";
@@ -17,6 +18,9 @@ export default async function Admin({ searchParams }: { searchParams: Promise<{ 
   const { edit } = await searchParams;
   const admin = createAdminClient();
   const { data: beats } = await admin.from("products").select("*").order("created_at", { ascending: false });
+  const { data: tiersData } = await admin.from("license_tiers").select("*").eq("active", true).order("sort_order");
+  const tiers = (tiersData ?? []) as LicenseTier[];
+  const fromOf = (bt: Beat) => { const ps = tiers.map(t => tierPrice(bt.prices, t)).filter((n): n is number => n != null); return ps.length ? Math.min(...ps) : 0; };
   let editing: Beat | null = null;
   if (edit) { const { data } = await admin.from("products").select("*").eq("id", edit).single(); editing = data as Beat; }
 
@@ -29,7 +33,7 @@ export default async function Admin({ searchParams }: { searchParams: Promise<{ 
 
       <div style={{background:"var(--bg-1)",border:"1px solid var(--line)",borderRadius:16,padding:"26px 28px",marginBottom:40}}>
         <h2 className="display" style={{fontSize:"1.6rem",marginBottom:18}}>{editing?`Edit — ${editing.title}`:"Add a beat"}</h2>
-        <BeatForm beat={editing} />
+        <BeatForm beat={editing} tiers={tiers} />
         {editing && <Link href="/admin" className="a-act" style={{marginTop:14}}>Cancel edit</Link>}
       </div>
 
@@ -40,7 +44,7 @@ export default async function Admin({ searchParams }: { searchParams: Promise<{ 
             <tr key={b.id}>
               <td><b>{b.title}</b></td>
               <td style={{color:"var(--tx-dim)"}}>{b.genre} · {b.bpm} · {b.music_key}</td>
-              <td>{b.status==="sold"?"—":euro(b.base_price_cents)}</td>
+              <td>{b.status==="sold"?"—":euro(fromOf(b))}</td>
               <td><span className={`st ${b.status}`}>{b.status}</span></td>
               <td>{b.featured?"★":"—"}</td>
               <td style={{whiteSpace:"nowrap"}}>

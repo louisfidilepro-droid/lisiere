@@ -3,6 +3,7 @@ import type { Beat, LicenseTier } from "@/lib/types";
 import Hero from "@/components/Hero";
 import BeatCard from "@/components/BeatCard";
 import LicenseExplorer from "@/components/LicenseExplorer";
+import { tierPrice } from "@/lib/pricing";
 
 export const dynamic = "force-dynamic";
 
@@ -21,8 +22,7 @@ async function getData() {
 
 export default async function Home() {
   const { beats, tiers, sb } = await getData();
-  const paid = tiers.map(t=>t.price_cents).filter((n): n is number => n != null);
-  const fromCents = paid.length ? Math.min(...paid) : 0;
+  const fromOf = (bt: Beat) => { const ps = tiers.map(t => tierPrice(bt.prices, t)).filter((n): n is number => n != null); return ps.length ? Math.min(...ps) : 0; };
   const pub = (path: string|null) => (path && sb) ? sb.storage.from("previews").getPublicUrl(path).data.publicUrl : null;
   const clientBeats = beats.map(b => ({ ...b, previewUrl: pub(b.preview_path), coverUrl: b.cover_url }));
 
@@ -37,7 +37,7 @@ export default async function Home() {
         ) : (
           <div className="grid">
             {clientBeats.map((b,i)=>(
-              <BeatCard key={b.id} beat={b} fromCents={fromCents} delay={(i%8)*0.05} />
+              <BeatCard key={b.id} beat={b} fromCents={fromOf(b)} delay={(i%8)*0.05} />
             ))}
           </div>
         )}

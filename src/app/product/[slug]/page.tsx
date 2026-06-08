@@ -27,7 +27,7 @@ export default async function Product({ params }: { params: Promise<{ slug: stri
           {b.description && <p style={{color:"var(--tx-dim)",marginBottom:30,maxWidth:460}}>{b.description}</p>}
           <ProductBuy beatId={b.id} slug={b.slug} title={b.title}
             meta={`${b.bpm??""} BPM · ${b.music_key??""} · ${b.genre??""}`}
-            baseCents={b.base_price_cents} coverUrl={b.cover_url} previewUrl={previewUrl}
+            prices={b.prices} coverUrl={b.cover_url} previewUrl={previewUrl}
             tiers={(tiers??[]) as LicenseTier[]} sold={b.status==="sold"} />
         </div>
       </div>

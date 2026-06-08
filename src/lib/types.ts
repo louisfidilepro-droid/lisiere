@@ -16,6 +16,7 @@ export interface Beat {
   preview_path: string | null;
   cover_url: string | null;
   base_price_cents: number;
+  prices: Record<string, number> | null;  // per-tier override: tierId -> cents
   created_at: string;
 }
 
