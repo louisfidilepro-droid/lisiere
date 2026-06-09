@@ -42,6 +42,7 @@ export async function saveBeat(formData: FormData) {
     status: (formData.get("status") as string) || "draft",
     featured: formData.get("featured") === "on",
     cover_url: (formData.get("cover_url") as string) || null,
+    download_url: ((formData.get("download_url") as string) || "").trim() || null,
     description: (formData.get("description") as string) || null,
     base_price_cents: Math.round(Number(formData.get("base_price") || 29) * 100),
     tags: ((formData.get("tags") as string) || "").split(",").map((s) => s.trim()).filter(Boolean),

@@ -14,6 +14,7 @@ export interface Beat {
   tags: string[] | null;
   description: string | null;
   preview_path: string | null;
+  download_url: string | null;  // external deliverable link (for files >50MB)
   cover_url: string | null;
   base_price_cents: number;
   prices: Record<string, number> | null;  // per-tier override: tierId -> cents

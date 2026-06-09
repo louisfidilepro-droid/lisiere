@@ -168,7 +168,12 @@ export default function BeatForm({ beat, tiers }: { beat?: Beat | null; tiers: L
         <div className="field" style={{ gridColumn: "1/-1" }}><label>Tags (comma separated)</label><input name="tags" defaultValue={(b?.tags || []).join(", ")} /></div>
         <div className="field" style={{ gridColumn: "1/-1" }}><label>Description</label><textarea name="description" defaultValue={b?.description ?? ""} rows={3} /></div>
         <div className="field"><label>Preview audio (MP3) {b?.preview_path ? "- replace" : ""}</label><input name="preview_file" type="file" accept="audio/*" /></div>
-        <div className="field"><label>Deliverable file (zip/wav) {b?.["download_path" as keyof Beat] ? "- replace" : ""}</label><input name="master_file" type="file" /></div>
+        <div className="field"><label>Deliverable file (zip/wav, max 50 Mo) {b?.["download_path" as keyof Beat] ? "- replace" : ""}</label><input name="master_file" type="file" /></div>
+        <div className="field" style={{ gridColumn: "1/-1" }}>
+          <label>…ou lien de téléchargement externe (fichiers &gt; 50 Mo : WeTransfer, Drive, Dropbox…)</label>
+          <input name="download_url" defaultValue={b?.download_url ?? ""} placeholder="https://… — l'acheteur sera redirigé ici après paiement" />
+          <span style={{ color: "var(--tx-faint)", fontSize: ".78rem", marginTop: 4 }}>Si rempli, ce lien remplace le fichier uploadé. Idéal pour les WAV/stems lourds.</span>
+        </div>
       </div>
       {msg && <p style={{ marginTop: 12, fontSize: ".85rem", color: msg.startsWith("Error") ? "#ff8a8a" : "var(--v-bright)" }}>{msg}</p>}
       <button className="btn btn-primary" disabled={busy} style={{ marginTop: 18 }}>
