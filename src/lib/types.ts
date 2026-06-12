@@ -12,6 +12,7 @@ export interface Beat {
   bpm: number | null;
   music_key: string | null;
   status: ProductStatus;
+  brand: string;                // 'lisiere' | 'arom'
   featured: boolean;
   sort_order: number;
   tags: string[] | null;

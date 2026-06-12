@@ -147,6 +147,11 @@ export default function BeatForm({ beat, tiers, collections = [] }: { beat?: Bea
             <option value="published">Published</option><option value="draft">Draft</option>
             <option value="hidden">Hidden</option><option value="sold">Sold</option>
           </select></div>
+        <div className="field"><label>Marque</label>
+          <select name="brand" defaultValue={b?.brand || "lisiere"}>
+            <option value="lisiere">Lisière (site principal)</option>
+            <option value="arom">AROM (page /beats)</option>
+          </select></div>
       </div>
 
       <div style={{ marginTop: 16, padding: "14px 16px", border: "1px solid var(--line)", borderRadius: 12 }}>

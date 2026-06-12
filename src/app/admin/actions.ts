@@ -43,6 +43,7 @@ export async function saveBeat(formData: FormData) {
     bpm: formData.get("bpm") ? Number(formData.get("bpm")) : null,
     music_key: (formData.get("music_key") as string) || null,
     status: (formData.get("status") as string) || "draft",
+    brand: (formData.get("brand") as string) || "lisiere",
     featured: formData.get("featured") === "on",
     sort_order: Number(formData.get("sort_order") || 0),
     cover_url: (formData.get("cover_url") as string) || null,

@@ -431,3 +431,21 @@ footer{padding:64px 0 46px;border-top:1px solid var(--line);margin-top:clamp(80p
 .arom-contact a{color:var(--a-chrome);text-decoration:none;border:1px solid var(--a-line2);padding:12px 20px;border-radius:30px;font-size:.86rem;transition:.28s}
 .arom-contact a:hover{background:rgba(124,24,44,.14);border-color:var(--a-chrome)}
 .arom-foot{margin-top:34px;color:var(--a-faint);font-size:.74rem;letter-spacing:.08em}
+
+/* AROM — re-theme reused components (cards, buttons, filters, product page) to bordeaux */
+.arom{
+  --v-deep:#4a0e1c; --v-core:#7c182c; --v-vivid:#9a3346; --v-bright:#e0c4c8; --v-dust:#a8979b;
+  --bg-1:#0e0709; --bg-2:#160b10; --bg-3:#1d1014; --bg-4:#271720;
+  --tx:#ece1e3; --tx-dim:#a8979b; --tx-faint:#6e6064;
+  --line:rgba(224,196,200,.10); --line-2:rgba(124,24,44,.5);
+  --glow:0 0 60px -10px rgba(124,24,44,.55);
+}
+.arom .glare{background:radial-gradient(220px circle at var(--gx,50%) var(--gy,50%),rgba(224,196,200,.32),transparent 60%)}
+.arom .badge{background:rgba(124,24,44,.85)}
+.arom .card:hover{box-shadow:var(--shadow),0 0 60px -16px rgba(124,24,44,.7)}
+.arom .play{border-color:rgba(224,196,200,.5);box-shadow:0 0 30px -8px rgba(124,24,44,.7)}
+.arom .card-art::after,.arom .coll-cover::after{background:linear-gradient(180deg,transparent 40%,rgba(14,7,9,.85))}
+.arom .lic-tab.on{background:rgba(124,24,44,.12)}
+.arom .lic-stage::before{background:radial-gradient(circle,rgba(124,24,44,.2),transparent 70%)}
+.arom .pdp-cover{box-shadow:var(--shadow),0 0 90px -34px rgba(124,24,44,.75)}
+.arom .fchip.on{background:linear-gradient(120deg,var(--v-core),var(--v-vivid))}

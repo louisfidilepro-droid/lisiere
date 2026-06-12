@@ -18,7 +18,7 @@ export default async function Product({ params }: { params: Promise<{ slug: stri
   const moods = (b.mood || "").split(",").map((m) => m.trim()).filter(Boolean);
 
   return (
-    <main className="page pdp">
+    <main className={`page pdp ${b.brand === "arom" ? "arom" : ""}`}>
       <Link href="/" className="a-act" style={{ marginBottom: 22, display: "inline-block" }}>← Retour</Link>
       <div className="pdp-grid">
         <div className="pdp-cover-wrap">

@@ -13,7 +13,7 @@ async function getData() {
   try {
     const sb = await createClient();
     const [{ data: beats }, { data: tiers }, { data: colls }] = await Promise.all([
-      sb.from("products").select("*").in("status", ["published", "sold"]).order("sort_order", { ascending: true }).order("created_at", { ascending: false }),
+      sb.from("products").select("*").eq("brand", "lisiere").in("status", ["published", "sold"]).order("sort_order", { ascending: true }).order("created_at", { ascending: false }),
       sb.from("license_tiers").select("*").eq("active", true).order("sort_order"),
       sb.from("collections").select("*").order("sort_order"),
     ]);

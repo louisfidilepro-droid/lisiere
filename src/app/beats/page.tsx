@@ -1,89 +1,68 @@
 import type { Metadata } from "next";
-import { aromBeats, beatstarsEmbedUrl, aromOgImage, aromContact } from "@/data/arom";
+import { createClient } from "@/lib/supabase/server";
+import type { Beat, LicenseTier } from "@/lib/types";
+import Catalog, { CBeat } from "@/components/Catalog";
+import { tierPrice } from "@/lib/pricing";
+import { euro } from "@/lib/format";
+import { aromOgImage, aromContact } from "@/data/arom";
 
-const URL = "https://www.xn--lisire-6ua.com/beats";
-const DESC = "AROM — instrumentales jerk drill françaises. Écoute et achète tes type beats drill : lease MP3/WAV, stems, exclusif. Prod. Lisière.";
+export const dynamic = "force-dynamic";
+
+const SITE = "https://www.xn--lisire-6ua.com/beats";
+const DESC = "AROM — instrumentales jerk drill françaises. Écoute et achète tes type beats drill : lease, stems, exclusif. Prod. Lisière.";
 
 export const metadata: Metadata = {
   title: "AROM — Jerk Drill Type Beats | prod. Lisière",
   description: DESC,
   keywords: ["jerk drill type beat", "instru drill", "AROM beats", "type beat drill français", "prod AROM", "drill instrumental"],
-  alternates: { canonical: URL },
+  alternates: { canonical: SITE },
   openGraph: {
-    title: "AROM — Jerk Drill Type Beats",
-    description: DESC,
-    url: URL,
-    siteName: "AROM",
-    type: "website",
+    title: "AROM — Jerk Drill Type Beats", description: DESC, url: SITE, siteName: "AROM", type: "website",
     ...(aromOgImage ? { images: [{ url: aromOgImage, width: 1200, height: 630 }] } : {}),
   },
   twitter: {
     card: aromOgImage ? "summary_large_image" : "summary",
-    title: "AROM — Jerk Drill Type Beats",
-    description: DESC,
+    title: "AROM — Jerk Drill Type Beats", description: DESC,
     ...(aromOgImage ? { images: [aromOgImage] } : {}),
   },
 };
 
-function ytId(url: string) { const m = url.match(/(?:youtu\.be\/|[?&]v=|shorts\/|embed\/)([\w-]{11})/); return m ? m[1] : ""; }
-function thumb(b: { youtube: string; cover?: string }) { return b.cover || (ytId(b.youtube) ? `https://i.ytimg.com/vi/${ytId(b.youtube)}/hqdefault.jpg` : ""); }
+export default async function BeatsPage() {
+  const sb = await createClient();
+  const [{ data: beats }, { data: tiersData }] = await Promise.all([
+    sb.from("products").select("*").eq("brand", "arom").in("status", ["published", "sold"]).order("sort_order", { ascending: true }).order("created_at", { ascending: false }),
+    sb.from("license_tiers").select("*").eq("active", true).order("sort_order"),
+  ]);
+  const tiers = (tiersData ?? []) as LicenseTier[];
+  const list = (beats ?? []) as Beat[];
+  const fromOf = (bt: Beat) => { const ps = tiers.map(t => tierPrice(bt.prices, t)).filter((n): n is number => n != null); return ps.length ? Math.min(...ps) : 0; };
+  const pub = (p: string | null) => p ? sb.storage.from("previews").getPublicUrl(p).data.publicUrl : null;
+  const clientBeats: CBeat[] = list.map(b => ({ ...b, previewUrl: pub(b.preview_path), coverUrl: b.cover_url, fromCents: fromOf(b) }));
 
-const LICENCES = [
-  { name: "Lease", files: "MP3 + WAV", price: "30 €" },
-  { name: "Stems", files: "WAV + pistes séparées", price: "90 €" },
-  { name: "Exclusif", files: "droits exclusifs, beat retiré", price: "sur demande" },
-];
-
-export default function BeatsPage() {
   return (
     <div className="arom">
       <section className="arom-hero">
         <span className="arom-kicker">prods by Lisière</span>
         <h1 className="arom-logo">AROM</h1>
         <p className="arom-tag">jerk drill instrumentals — français</p>
-        <a className="arom-btn solid arom-hero-cta" href="#beats">Voir les prods</a>
+        <a className="btn btn-primary arom-hero-cta" href="#beats">Voir les prods</a>
       </section>
 
       <section className="arom-sec" id="beats">
         <div className="arom-head"><span className="arom-eyebrow">Catalogue</span><h2>Dernières prods</h2></div>
-        <div className="arom-grid">
-          {aromBeats.map((b, i) => {
-            const t = thumb(b);
-            return (
-              <article className="arom-card" key={i}>
-                <div className="arom-cover">
-                  {t
-                    ? <img src={t} alt={`${b.title} — jerk drill type beat`} loading="lazy" />
-                    : <span className="arom-cover-empty">{b.title}</span>}
-                  <span className="arom-bpm">{b.bpm} BPM</span>
-                </div>
-                <div className="arom-card-body">
-                  <h3 className="arom-card-title">{b.title}</h3>
-                  <div className="arom-actions">
-                    <a className="arom-btn ghost" href={b.youtube} target="_blank" rel="noopener noreferrer">Écouter</a>
-                    <a className="arom-btn solid" href={b.buy} target="_blank" rel="noopener noreferrer">Acheter</a>
-                  </div>
-                </div>
-              </article>
-            );
-          })}
-        </div>
-
-        {beatstarsEmbedUrl && (
-          <div className="arom-embed">
-            <iframe src={beatstarsEmbedUrl} title="AROM — store BeatStars" loading="lazy" allow="autoplay" />
-          </div>
-        )}
+        {clientBeats.length === 0
+          ? <p className="arom-note">Bientôt. Ajoute des beats dans <b>/admin</b> avec « Marque = AROM » et ils apparaîtront ici.</p>
+          : <Catalog beats={clientBeats} />}
       </section>
 
       <section className="arom-sec" id="licences">
         <div className="arom-head"><span className="arom-eyebrow">Tarifs</span><h2>Licences</h2></div>
         <div className="arom-lic">
-          {LICENCES.map((l) => (
-            <div className="arom-lic-row" key={l.name}>
-              <span className="arom-lic-name">{l.name}</span>
-              <span className="arom-lic-files">{l.files}</span>
-              <span className="arom-lic-price">{l.price}</span>
+          {tiers.map(t => (
+            <div className="arom-lic-row" key={t.id}>
+              <span className="arom-lic-name">{t.name.split(" (")[0]}</span>
+              <span className="arom-lic-files">{t.files}</span>
+              <span className="arom-lic-price">{t.price_cents != null ? euro(t.price_cents) : "sur demande"}</span>
             </div>
           ))}
         </div>
