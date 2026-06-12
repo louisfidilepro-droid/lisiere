@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
-import type { Beat, LicenseTier } from "@/lib/types";
+import type { Beat, LicenseTier, Collection } from "@/lib/types";
 import Hero from "@/components/Hero";
 import Catalog, { CBeat } from "@/components/Catalog";
 import LicenseExplorer from "@/components/LicenseExplorer";
@@ -12,29 +12,32 @@ export const dynamic = "force-dynamic";
 async function getData() {
   try {
     const sb = await createClient();
-    const [{ data: beats }, { data: tiers }] = await Promise.all([
-      sb.from("products").select("*").in("status", ["published", "sold"]).order("created_at", { ascending: false }),
+    const [{ data: beats }, { data: tiers }, { data: colls }] = await Promise.all([
+      sb.from("products").select("*").in("status", ["published", "sold"]).order("sort_order", { ascending: true }).order("created_at", { ascending: false }),
       sb.from("license_tiers").select("*").eq("active", true).order("sort_order"),
+      sb.from("collections").select("*").order("sort_order"),
     ]);
-    return { beats: (beats ?? []) as Beat[], tiers: (tiers ?? []) as LicenseTier[], sb };
+    return { beats: (beats ?? []) as Beat[], tiers: (tiers ?? []) as LicenseTier[], colls: (colls ?? []) as Collection[], sb };
   } catch {
-    return { beats: [] as Beat[], tiers: [] as LicenseTier[], sb: null };
+    return { beats: [] as Beat[], tiers: [] as LicenseTier[], colls: [] as Collection[], sb: null };
   }
 }
 
 export default async function Home() {
-  const { beats, tiers, sb } = await getData();
+  const { beats, tiers, colls, sb } = await getData();
+  const collMeta = new Map(colls.map(c => [c.slug, c]));
   const fromOf = (bt: Beat) => { const ps = tiers.map(t => tierPrice(bt.prices, t)).filter((n): n is number => n != null); return ps.length ? Math.min(...ps) : 0; };
   const pub = (path: string | null) => (path && sb) ? sb.storage.from("previews").getPublicUrl(path).data.publicUrl : null;
   const clientBeats: CBeat[] = beats.map(b => ({ ...b, previewUrl: pub(b.preview_path), coverUrl: b.cover_url, fromCents: fromOf(b) }));
 
-  const map = new Map<string, { name: string; slug: string; cover: string | null; count: number }>();
+  const map = new Map<string, { name: string; slug: string; cover: string | null; count: number; order: number }>();
   for (const b of clientBeats) {
     const name = (b.collection || "").trim(); if (!name) continue;
     const slug = collSlug(name); const e = map.get(slug);
-    if (e) { e.count++; if (!e.cover) e.cover = b.coverUrl; } else map.set(slug, { name, slug, cover: b.coverUrl, count: 1 });
+    if (e) { e.count++; if (!e.cover) e.cover = b.coverUrl; } else map.set(slug, { name, slug, cover: b.coverUrl, count: 1, order: 0 });
   }
-  const collections = [...map.values()];
+  for (const c of map.values()) { const m = collMeta.get(c.slug); if (m) { if (m.cover_url) c.cover = m.cover_url; c.order = m.sort_order; } }
+  const collections = [...map.values()].sort((a, b) => a.order - b.order || a.name.localeCompare(b.name));
 
   return (
     <main>

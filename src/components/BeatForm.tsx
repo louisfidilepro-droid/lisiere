@@ -168,7 +168,7 @@ export default function BeatForm({ beat, tiers, collections = [] }: { beat?: Bea
         <div className="field"><label>Featured</label>
           <label style={{ display: "flex", gap: 8, alignItems: "center", fontSize: ".85rem", color: "var(--tx-dim)", height: 44 }}>
             <input type="checkbox" name="featured" defaultChecked={b?.featured} style={{ width: "auto" }} /> Mettre en avant</label></div>
-        <div className="field"></div>
+        <div className="field"><label>Ordre d’affichage (petit = en premier)</label><input name="sort_order" type="number" defaultValue={b?.sort_order ?? 0} /></div>
         <div className="field" style={{ gridColumn: "1/-1" }}><label>Cover image (upload) {b?.cover_url ? "- replace" : "- leave empty to auto-generate"}</label><input name="cover_file" type="file" accept="image/*" /></div>
         <div className="field" style={{ gridColumn: "1/-1" }}><label>...or paste a cover image URL</label><input name="cover_url" defaultValue={b?.cover_url ?? ""} placeholder="https://... (optional)" /></div>
         <div className="field" style={{ gridColumn: "1/-1" }}><label>Tags (comma separated)</label><input name="tags" defaultValue={(b?.tags || []).join(", ")} /></div>

@@ -4,6 +4,7 @@ import { getUser, isAdmin } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { collSlug } from "@/lib/slug";
 
 async function guard() {
   const user = await getUser();
@@ -43,6 +44,7 @@ export async function saveBeat(formData: FormData) {
     music_key: (formData.get("music_key") as string) || null,
     status: (formData.get("status") as string) || "draft",
     featured: formData.get("featured") === "on",
+    sort_order: Number(formData.get("sort_order") || 0),
     cover_url: (formData.get("cover_url") as string) || null,
     download_url: ((formData.get("download_url") as string) || "").trim() || null,
     description: (formData.get("description") as string) || null,
@@ -79,4 +81,47 @@ export async function signOut() {
   const sb = await createClient();
   await sb.auth.signOut();
   redirect("/admin/login");
+}
+
+/** Collections (folders): upsert cover / description / order by slug. */
+export async function saveCollection(formData: FormData) {
+  await guard();
+  const admin = createAdminClient();
+  const name = ((formData.get("name") as string) || "").trim();
+  if (!name) return;
+  const slug = collSlug(name);
+  const row = {
+    name, slug,
+    description: ((formData.get("description") as string) || "").trim() || null,
+    cover_url: ((formData.get("cover_url") as string) || "").trim() || null,
+    sort_order: Number(formData.get("sort_order") || 0),
+  };
+  await admin.from("collections").upsert(row, { onConflict: "slug" });
+  revalidatePath("/"); revalidatePath("/admin"); revalidatePath(`/collection/${slug}`);
+}
+
+export async function deleteCollection(formData: FormData) {
+  await guard();
+  const admin = createAdminClient();
+  await admin.from("collections").delete().eq("id", formData.get("id") as string);
+  revalidatePath("/"); revalidatePath("/admin");
+}
+
+/** License tiers: edit name / price / files / rights / order / active. */
+export async function saveTier(formData: FormData) {
+  await guard();
+  const admin = createAdminClient();
+  const id = formData.get("id") as string;
+  const priceStr = ((formData.get("price") as string) || "").trim();
+  const price_cents = priceStr === "" ? null : Math.round(parseFloat(priceStr.replace(",", ".")) * 100);
+  const row = {
+    name: ((formData.get("name") as string) || "Licence").trim(),
+    price_cents,
+    files: (formData.get("files") as string) || "",
+    rights: (formData.get("rights") as string) || "",
+    sort_order: Number(formData.get("sort_order") || 0),
+    active: formData.get("active") === "on",
+  };
+  await admin.from("license_tiers").update(row).eq("id", id);
+  revalidatePath("/"); revalidatePath("/admin");
 }

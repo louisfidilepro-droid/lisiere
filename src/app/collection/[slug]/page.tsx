@@ -12,7 +12,7 @@ export default async function CollectionPage({ params }: { params: Promise<{ slu
   const { slug } = await params;
   const sb = await createClient();
   const [{ data: beatsData }, { data: tiersData }] = await Promise.all([
-    sb.from("products").select("*").in("status", ["published", "sold"]).order("created_at", { ascending: false }),
+    sb.from("products").select("*").in("status", ["published", "sold"]).order("sort_order", { ascending: true }).order("created_at", { ascending: false }),
     sb.from("license_tiers").select("*").eq("active", true).order("sort_order"),
   ]);
   const tiers = (tiersData ?? []) as LicenseTier[];

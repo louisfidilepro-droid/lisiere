@@ -13,6 +13,7 @@ export interface Beat {
   music_key: string | null;
   status: ProductStatus;
   featured: boolean;
+  sort_order: number;
   tags: string[] | null;
   description: string | null;
   preview_path: string | null;
@@ -40,4 +41,13 @@ export interface PromoCode { id: string; code: string; percent_off: number; acti
 export interface CartItem {
   beatId: string; slug: string; title: string; coverUrl: string | null;
   tierId: string; tierName: string; isExclusive: boolean; priceCents: number;
+}
+
+export interface Collection {
+  id: string;
+  name: string;
+  slug: string;
+  description: string | null;
+  cover_url: string | null;
+  sort_order: number;
 }

@@ -268,3 +268,27 @@ footer{padding:70px 0 50px;border-top:1px solid var(--line);margin-top:120px}
 
 /* touch devices: play button always visible (no hover) */
 @media (hover:none){ .card .play{opacity:1;transform:translate(-50%,-50%) scale(1)} }
+
+/* ════════ Admin dashboard (P2) ════════ */
+.adash{background:var(--bg-1);border:1px solid var(--line);border-radius:14px;margin-bottom:18px;overflow:hidden}
+.adash>summary{cursor:pointer;list-style:none;padding:16px 20px;font-family:var(--display);font-size:1.3rem;color:var(--tx);display:flex;align-items:center;gap:10px}
+.adash>summary::-webkit-details-marker{display:none}
+.adash>summary::before{content:"▸";color:var(--v-vivid);transition:transform .2s;display:inline-block}
+.adash[open]>summary::before{transform:rotate(90deg)}
+.adash>summary span{color:var(--tx-faint);font-family:var(--body);font-size:.8rem}
+.adash-body{padding:6px 20px 22px}
+.cm-row,.le-row{display:flex;flex-wrap:wrap;align-items:flex-end;gap:12px;padding:14px;border:1px solid var(--line);border-radius:10px;background:var(--bg-2)}
+.le-row{flex-direction:column;align-items:stretch}
+.le-grid{display:grid;grid-template-columns:1.2fr .9fr 1.4fr .5fr;gap:12px}
+.le-foot{display:flex;justify-content:space-between;align-items:center;gap:14px}
+.cm-title{min-width:160px;display:flex;flex-direction:column;gap:2px}
+.cm-title b{font-family:var(--display);font-size:1.15rem}
+.cm-title span{color:var(--tx-faint);font-size:.72rem;letter-spacing:.06em;text-transform:uppercase}
+.cm-f{display:flex;flex-direction:column;gap:5px;flex:1;min-width:130px}
+.cm-f>span{font-size:.68rem;letter-spacing:.1em;text-transform:uppercase;color:var(--v-dust)}
+.cm-f input,.cm-f select,.cm-f textarea{background:var(--bg-3);border:1px solid var(--line);color:var(--tx);padding:9px 11px;border-radius:8px;font-family:var(--body);font-size:.86rem}
+.cm-f input:focus,.cm-f select:focus,.cm-f textarea:focus{outline:none;border-color:var(--v-vivid)}
+.cm-ord{flex:0 0 80px;min-width:70px}
+.cm-ord input{width:100%}
+.cm-desc{flex:2}
+@media(max-width:720px){.le-grid{grid-template-columns:1fr 1fr}}
