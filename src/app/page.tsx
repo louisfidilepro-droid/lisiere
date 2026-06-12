@@ -44,7 +44,7 @@ export default async function Home() {
       <Hero />
 
       {collections.length > 0 && (
-        <section className="wrap" id="collections" style={{ marginTop: 20 }}>
+        <section className="wrap" id="collections" style={{ marginTop: 6 }}>
           <div className="sec-head reveal"><span className="eyebrow">Collections</span><h2>Par <em className="text-violet">dossier</em>.</h2></div>
           <div className="coll-grid">
             {collections.map(c => (
@@ -57,7 +57,7 @@ export default async function Home() {
         </section>
       )}
 
-      <section className="wrap" id="catalog" style={{ paddingTop: 20, marginTop: collections.length ? 96 : 30, scrollMarginTop: 90 }}>
+      <section className="wrap" id="catalog" style={{ paddingTop: 8, marginTop: collections.length ? 64 : 22, scrollMarginTop: 90 }}>
         <div className="sec-head reveal"><span className="eyebrow">Catalogue</span><h2>Tous les <em className="text-violet">sons</em>.</h2></div>
         {clientBeats.length === 0
           ? <p style={{ color: "var(--tx-dim)", textAlign: "center", padding: "60px 0" }}>Aucun beat publié pour l’instant.</p>
