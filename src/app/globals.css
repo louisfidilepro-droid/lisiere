@@ -292,3 +292,41 @@ footer{padding:70px 0 50px;border-top:1px solid var(--line);margin-top:120px}
 .cm-ord input{width:100%}
 .cm-desc{flex:2}
 @media(max-width:720px){.le-grid{grid-template-columns:1fr 1fr}}
+
+/* ════════ Sortable + admin list (P3) ════════ */
+.sortable{display:flex;flex-direction:column;gap:10px}
+.sort-row{transition:outline .15s}
+.sort-row.over{outline:2px dashed var(--line-2);outline-offset:3px;border-radius:11px}
+.sort-ctl{display:inline-flex;align-items:center;gap:4px;color:var(--tx-faint);flex-shrink:0}
+.sort-h{cursor:grab;font-size:1.05rem;user-select:none;padding:0 2px;line-height:1}
+.sort-ar{background:var(--bg-3);border:1px solid var(--line);color:var(--tx-dim);width:22px;height:18px;border-radius:5px;cursor:pointer;font-size:.55rem;line-height:1;display:inline-flex;align-items:center;justify-content:center}
+.sort-ar:hover{border-color:var(--v-vivid);color:var(--v-bright)}
+.badmin-row{display:flex;align-items:center;gap:12px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--bg-2)}
+.badmin-main{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.badmin-main b{font-family:var(--display);font-size:1.05rem}
+.badmin-meta{color:var(--tx-faint);font-size:.74rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.a-link{color:var(--v-bright);text-decoration:none}
+.badmin-price{color:var(--tx-dim);font-size:.85rem;min-width:54px;text-align:right}
+.badmin-feat{width:14px;color:var(--v-vivid);text-align:center}
+.badmin-act{display:flex;gap:6px;white-space:nowrap}
+.cm-cover{width:54px;height:54px;border-radius:8px;background-size:cover;background-position:center;flex-shrink:0;border:1px solid var(--line)}
+@media(max-width:720px){.badmin-row{flex-wrap:wrap}.badmin-main{flex-basis:100%;order:-1}.badmin-meta{white-space:normal}}
+
+/* ════════ Premium product page ════════ */
+.pdp-grid{display:grid;grid-template-columns:minmax(0,.95fr) minmax(0,1.05fr);gap:clamp(28px,5vw,64px);align-items:start;margin-top:12px}
+.pdp-cover-wrap{position:relative}
+.pdp-cover{aspect-ratio:1;border-radius:20px;background-size:cover;background-position:center;box-shadow:var(--shadow),0 0 90px -34px rgba(122,77,255,.75);position:relative}
+.pdp-cover::after{content:"";position:absolute;inset:0;border-radius:20px;box-shadow:inset 0 0 0 1px rgba(157,107,255,.18);pointer-events:none}
+@media(min-width:861px){.pdp-cover-wrap{position:sticky;top:96px}}
+.pdp-info{min-width:0}
+.pdp-info .eyebrow{display:block;margin-bottom:12px}
+.pdp-title{font-size:clamp(2.3rem,5vw,3.6rem);line-height:1.02;margin:0 0 14px}
+.pdp-tags{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:22px}
+.pdp-tags span{font-size:.68rem;letter-spacing:.08em;text-transform:uppercase;color:var(--tx-dim);border:1px solid var(--line-2);padding:6px 12px;border-radius:20px}
+.pdp-desc{color:var(--tx-dim);margin-bottom:26px;max-width:520px;line-height:1.7}
+.pdp-preview{width:100%;justify-content:center;margin-bottom:20px}
+.trust{display:flex;flex-wrap:wrap;gap:16px;margin-top:24px;padding-top:20px;border-top:1px solid var(--line)}
+.trust-item{display:flex;align-items:center;gap:9px;color:var(--tx-dim);font-size:.82rem}
+.trust-item svg{width:18px;height:18px;stroke:var(--v-vivid);fill:none;stroke-width:1.6;stroke-linejoin:round;stroke-linecap:round;flex-shrink:0}
+.pdp-pay{margin-top:12px;color:var(--tx-faint);font-size:.78rem}
+@media(max-width:860px){.pdp-grid{grid-template-columns:1fr}.pdp-cover-wrap{max-width:420px}}

@@ -1,11 +1,10 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getUser, isAdmin } from "@/lib/auth";
 import { redirect } from "next/navigation";
-import { euro } from "@/lib/format";
 import type { Beat, LicenseTier, Collection } from "@/lib/types";
 import { tierPrice } from "@/lib/pricing";
 import BeatForm from "@/components/BeatForm";
-import AdminRowPlay from "@/components/AdminRowPlay";
+import BeatsAdminList, { AdminBeat } from "@/components/BeatsAdminList";
 import CollectionsManager, { CollGroup } from "@/components/CollectionsManager";
 import LicenseEditor from "@/components/LicenseEditor";
 import { collSlug } from "@/lib/slug";
@@ -39,6 +38,12 @@ export default async function Admin({ searchParams }: { searchParams: Promise<{ 
     g.count++; if (b.cover_url && !g.covers.includes(b.cover_url)) g.covers.push(b.cover_url);
   }
   const groups = [...groupMap.values()];
+  const beatRows: AdminBeat[] = list.map(b => ({
+    key: b.id, id: b.id, title: b.title, collection: b.collection ?? null,
+    collSlug: b.collection ? collSlug(b.collection) : null,
+    genre: b.genre, bpm: b.bpm, music_key: b.music_key, status: b.status,
+    featured: b.featured, fromCents: fromOf(b), sold: b.status === "sold", previewUrl: pub(b.preview_path),
+  }));
   let editing: Beat | null = null;
   if (edit) { const { data } = await admin.from("products").select("*").eq("id", edit).single(); editing = data as Beat; }
 
@@ -65,30 +70,8 @@ export default async function Admin({ searchParams }: { searchParams: Promise<{ 
         <div className="adash-body"><LicenseEditor tiers={tiers} /></div>
       </details>
 
-      <h2 className="display" style={{fontSize:"1.4rem",margin:"10px 0 16px"}}>Beats</h2>
-      <table className="atable">
-        <thead><tr><th></th><th>Title</th><th>Collection</th><th>Genre · BPM · Key</th><th>From</th><th>Status</th><th>Feat.</th><th></th></tr></thead>
-        <tbody>
-          {list.map(b=>(
-            <tr key={b.id}>
-              <td><AdminRowPlay url={pub(b.preview_path)} /></td>
-              <td><b>{b.title}</b></td>
-              <td style={{color:"var(--tx-dim)"}}>{b.collection ? <a className="a-act" href={`/collection/${collSlug(b.collection)}`}>{b.collection}</a> : "—"}</td>
-              <td style={{color:"var(--tx-dim)"}}>{b.genre} · {b.bpm} · {b.music_key}</td>
-              <td>{b.status==="sold"?"—":euro(fromOf(b))}</td>
-              <td><span className={`st ${b.status}`}>{b.status}</span></td>
-              <td>{b.featured?"★":"—"}</td>
-              <td style={{whiteSpace:"nowrap"}}>
-                <Link href={`/admin?edit=${b.id}`} className="a-act">Edit</Link>
-                <form action={deleteBeat} style={{display:"inline"}}>
-                  <input type="hidden" name="id" defaultValue={b.id} />
-                  <button className="a-act" style={{borderColor:"rgba(255,138,138,.4)",color:"#ff8a8a"}}>Delete</button>
-                </form>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      <h2 className="display" style={{fontSize:"1.4rem",margin:"10px 0 16px"}}>Beats <span style={{fontSize:".8rem",color:"var(--tx-faint)",fontFamily:"var(--body)"}}>— glisse pour réordonner</span></h2>
+      <BeatsAdminList beats={beatRows} />
     </main>
   );
 }

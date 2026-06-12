@@ -125,3 +125,25 @@ export async function saveTier(formData: FormData) {
   await admin.from("license_tiers").update(row).eq("id", id);
   revalidatePath("/"); revalidatePath("/admin");
 }
+
+/** Persist a new beat order (index -> sort_order). */
+export async function reorderBeats(ids: string[]) {
+  await guard();
+  const admin = createAdminClient();
+  await Promise.all(ids.map((id, i) => admin.from("products").update({ sort_order: i }).eq("id", id)));
+  revalidatePath("/"); revalidatePath("/admin");
+}
+
+/** Persist a new collection order; creates rows that don't exist yet. */
+export async function reorderCollections(items: { name: string; slug: string }[]) {
+  await guard();
+  const admin = createAdminClient();
+  const { data: existing } = await admin.from("collections").select("slug");
+  const have = new Set(((existing ?? []) as { slug: string }[]).map((r) => r.slug));
+  await Promise.all(items.map((it, i) =>
+    have.has(it.slug)
+      ? admin.from("collections").update({ sort_order: i }).eq("slug", it.slug)
+      : admin.from("collections").insert({ name: it.name, slug: it.slug, sort_order: i })
+  ));
+  revalidatePath("/"); revalidatePath("/admin");
+}
