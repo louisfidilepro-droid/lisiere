@@ -7,6 +7,8 @@ export interface Beat {
   slug: string;
   type: ProductType;
   genre: string | null;
+  mood: string | null;          // comma-separated moods (filterable)
+  collection: string | null;    // folder / collection name
   bpm: number | null;
   music_key: string | null;
   status: ProductStatus;

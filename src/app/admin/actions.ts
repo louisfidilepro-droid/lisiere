@@ -37,6 +37,8 @@ export async function saveBeat(formData: FormData) {
     title,
     type: (formData.get("type") as string) || "instrumental",
     genre: (formData.get("genre") as string) || null,
+    mood: ((formData.get("mood") as string) || "").trim() || null,
+    collection: ((formData.get("collection") as string) || "").trim() || null,
     bpm: formData.get("bpm") ? Number(formData.get("bpm")) : null,
     music_key: (formData.get("music_key") as string) || null,
     status: (formData.get("status") as string) || "draft",

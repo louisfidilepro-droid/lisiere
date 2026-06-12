@@ -5,6 +5,8 @@ import { euro } from "@/lib/format";
 import type { Beat, LicenseTier } from "@/lib/types";
 import { tierPrice } from "@/lib/pricing";
 import BeatForm from "@/components/BeatForm";
+import AdminRowPlay from "@/components/AdminRowPlay";
+import { collSlug } from "@/lib/slug";
 import { deleteBeat, signOut } from "./actions";
 import Link from "next/link";
 
@@ -21,6 +23,9 @@ export default async function Admin({ searchParams }: { searchParams: Promise<{ 
   const { data: tiersData } = await admin.from("license_tiers").select("*").eq("active", true).order("sort_order");
   const tiers = (tiersData ?? []) as LicenseTier[];
   const fromOf = (bt: Beat) => { const ps = tiers.map(t => tierPrice(bt.prices, t)).filter((n): n is number => n != null); return ps.length ? Math.min(...ps) : 0; };
+  const list = (beats ?? []) as Beat[];
+  const pub = (p: string | null) => p ? admin.storage.from("previews").getPublicUrl(p).data.publicUrl : null;
+  const collections = Array.from(new Set(list.map(b => (b.collection || "").trim()).filter(Boolean))).sort();
   let editing: Beat | null = null;
   if (edit) { const { data } = await admin.from("products").select("*").eq("id", edit).single(); editing = data as Beat; }
 
@@ -33,16 +38,18 @@ export default async function Admin({ searchParams }: { searchParams: Promise<{ 
 
       <div style={{background:"var(--bg-1)",border:"1px solid var(--line)",borderRadius:16,padding:"26px 28px",marginBottom:40}}>
         <h2 className="display" style={{fontSize:"1.6rem",marginBottom:18}}>{editing?`Edit — ${editing.title}`:"Add a beat"}</h2>
-        <BeatForm beat={editing} tiers={tiers} />
+        <BeatForm beat={editing} tiers={tiers} collections={collections} />
         {editing && <Link href="/admin" className="a-act" style={{marginTop:14}}>Cancel edit</Link>}
       </div>
 
       <table className="atable">
-        <thead><tr><th>Title</th><th>Genre · BPM · Key</th><th>From</th><th>Status</th><th>Feat.</th><th></th></tr></thead>
+        <thead><tr><th></th><th>Title</th><th>Collection</th><th>Genre · BPM · Key</th><th>From</th><th>Status</th><th>Feat.</th><th></th></tr></thead>
         <tbody>
-          {(beats as Beat[] ?? []).map(b=>(
+          {list.map(b=>(
             <tr key={b.id}>
+              <td><AdminRowPlay url={pub(b.preview_path)} /></td>
               <td><b>{b.title}</b></td>
+              <td style={{color:"var(--tx-dim)"}}>{b.collection ? <a className="a-act" href={`/collection/${collSlug(b.collection)}`}>{b.collection}</a> : "—"}</td>
               <td style={{color:"var(--tx-dim)"}}>{b.genre} · {b.bpm} · {b.music_key}</td>
               <td>{b.status==="sold"?"—":euro(fromOf(b))}</td>
               <td><span className={`st ${b.status}`}>{b.status}</span></td>

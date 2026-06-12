@@ -64,7 +64,7 @@ async function generateCover(title: string): Promise<Blob> {
   return await new Promise<Blob>((res) => c.toBlob((b) => res(b!), "image/png", 0.92));
 }
 
-export default function BeatForm({ beat, tiers }: { beat?: Beat | null; tiers: LicenseTier[] }) {
+export default function BeatForm({ beat, tiers, collections = [] }: { beat?: Beat | null; tiers: LicenseTier[]; collections?: string[] }) {
   const b = beat;
   const router = useRouter();
   const [busy, setBusy] = useState(false);
@@ -133,7 +133,13 @@ export default function BeatForm({ beat, tiers }: { beat?: Beat | null; tiers: L
             <option value="instrumental">Instrumental</option><option value="drumkit">Drum kit</option>
             <option value="loopkit">Loop kit</option><option value="preset">Preset pack</option>
           </select></div>
-        <div className="field"><label>Genre</label><input name="genre" defaultValue={b?.genre ?? ""} /></div>
+        <div className="field"><label>Genre</label><input name="genre" defaultValue={b?.genre ?? ""} list="genre-list" />
+          <datalist id="genre-list"><option value="Trap" /><option value="Boom bap" /><option value="Drill" /><option value="R&B" /><option value="Soul" /><option value="Jazz" /><option value="Lo-Fi" /><option value="Afrobeat" /><option value="Cinématique" /></datalist></div>
+        <div className="field"><label>Collection / Dossier</label><input name="collection" defaultValue={b?.collection ?? ""} list="coll-list" placeholder="ex : Chaîne A, Pack de loops…" />
+          <datalist id="coll-list">{collections.map((c) => <option key={c} value={c} />)}</datalist></div>
+        <div className="field" style={{ gridColumn: "1/-1" }}><label>Mood / ambiance (séparés par des virgules — sert aux filtres client)</label>
+          <input name="mood" defaultValue={b?.mood ?? ""} list="mood-list" placeholder="ex : Sombre, Mélancolique, Cosmique" />
+          <datalist id="mood-list"><option value="Sombre" /><option value="Mélancolique" /><option value="Cosmique" /><option value="Chaud" /><option value="Nostalgique" /><option value="Rêveur" /><option value="Mystérieux" /><option value="Agressif" /><option value="Apaisant" /><option value="Triomphant" /><option value="Hypnotique" /><option value="Introspectif" /></datalist></div>
         <div className="field"><label>BPM</label><input name="bpm" type="number" defaultValue={b?.bpm ?? ""} /></div>
         <div className="field"><label>Key</label><input name="music_key" defaultValue={b?.music_key ?? ""} /></div>
         <div className="field"><label>Status</label>
@@ -167,7 +173,7 @@ export default function BeatForm({ beat, tiers }: { beat?: Beat | null; tiers: L
         <div className="field" style={{ gridColumn: "1/-1" }}><label>...or paste a cover image URL</label><input name="cover_url" defaultValue={b?.cover_url ?? ""} placeholder="https://... (optional)" /></div>
         <div className="field" style={{ gridColumn: "1/-1" }}><label>Tags (comma separated)</label><input name="tags" defaultValue={(b?.tags || []).join(", ")} /></div>
         <div className="field" style={{ gridColumn: "1/-1" }}><label>Description</label><textarea name="description" defaultValue={b?.description ?? ""} rows={3} /></div>
-        <div className="field"><label>Preview audio (MP3) {b?.preview_path ? "- replace" : ""}</label><input name="preview_file" type="file" accept="audio/*" /></div>
+        <div className="field"><label>Preview audio (MP3) — c’est ce que le client écoute {b?.preview_path ? "· remplacer" : "· requis pour le lecteur"}</label><input name="preview_file" type="file" accept="audio/*" /></div>
         <div className="field"><label>Deliverable file (zip/wav, max 50 Mo) {b?.["download_path" as keyof Beat] ? "- replace" : ""}</label><input name="master_file" type="file" /></div>
         <div className="field" style={{ gridColumn: "1/-1" }}>
           <label>…ou lien de téléchargement externe (fichiers &gt; 50 Mo : WeTransfer, Drive, Dropbox…)</label>
