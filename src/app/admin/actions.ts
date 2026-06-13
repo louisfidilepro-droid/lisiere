@@ -148,3 +148,38 @@ export async function reorderCollections(items: { name: string; slug: string }[]
   ));
   revalidatePath("/"); revalidatePath("/admin");
 }
+
+/** Génère un lien de téléchargement sécurisé (14 j) pour envoyer un beat/pack
+ *  sans achat (collab, promo, gratuit). Envoie un email via Resend si RESEND_API_KEY est défini. */
+export async function createSendLink(beatId: string, email?: string): Promise<{ url: string; emailed: boolean }> {
+  await guard();
+  const admin = createAdminClient();
+  const expires = new Date(Date.now() + 14 * 24 * 3600 * 1000).toISOString();
+  const { data, error } = await admin.from("download_grants")
+    .insert({ product_id: beatId, order_item_id: null, expires_at: expires })
+    .select("token").single();
+  if (error) throw new Error(error.message);
+  const base = (process.env.NEXT_PUBLIC_SITE_URL || "").replace(/\/+$/, "");
+  const url = `${base}/api/download/${data.token}`;
+
+  let emailed = false;
+  const key = process.env.RESEND_API_KEY;
+  const clean = (email || "").trim();
+  if (clean && key) {
+    const { data: prod } = await admin.from("products").select("title").eq("id", beatId).single();
+    const title = (prod?.title as string) || "ton son";
+    const from = process.env.RESEND_FROM || "Lisière <onboarding@resend.dev>";
+    try {
+      const res = await fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
+        body: JSON.stringify({
+          from, to: [clean], subject: `Ton téléchargement — ${title}`,
+          html: `<div style="font-family:sans-serif;line-height:1.6"><p>Salut,</p><p>Voici ton lien de téléchargement pour <b>${title}</b> :</p><p><a href="${url}">${url}</a></p><p style="color:#888;font-size:13px">Lien valable 14 jours.</p><p>— Lisière</p></div>`,
+        }),
+      });
+      emailed = res.ok;
+    } catch { emailed = false; }
+  }
+  return { url, emailed };
+}

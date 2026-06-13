@@ -449,3 +449,11 @@ footer{padding:64px 0 46px;border-top:1px solid var(--line);margin-top:clamp(80p
 .arom .lic-stage::before{background:radial-gradient(circle,rgba(124,24,44,.2),transparent 70%)}
 .arom .pdp-cover{box-shadow:var(--shadow),0 0 90px -34px rgba(124,24,44,.75)}
 .arom .fchip.on{background:linear-gradient(120deg,var(--v-core),var(--v-vivid))}
+
+/* Admin — envoi direct (lien sécurisé) */
+.badmin-send{border:1px solid var(--line-2);border-top:none;border-radius:0 0 10px 10px;background:var(--bg-1);padding:12px 14px;margin:-6px 0 4px;display:flex;flex-direction:column;gap:8px}
+.badmin-send-row{display:flex;gap:8px;flex-wrap:wrap}
+.badmin-send-row input{flex:1;min-width:180px;background:var(--bg-3);border:1px solid var(--line);color:var(--tx);padding:9px 12px;border-radius:8px;font-family:var(--body);font-size:.84rem}
+.badmin-send-row input:focus{outline:none;border-color:var(--v-vivid)}
+.badmin-send-msg{font-size:.78rem}
+.a-act.on{border-color:var(--v-vivid);color:var(--v-bright)}
