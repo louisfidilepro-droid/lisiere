@@ -7,6 +7,7 @@ import BeatForm from "@/components/BeatForm";
 import BeatsAdminList, { AdminBeat } from "@/components/BeatsAdminList";
 import CollectionsManager, { CollGroup } from "@/components/CollectionsManager";
 import LicenseEditor from "@/components/LicenseEditor";
+import ShareBuilder, { ShareBeat } from "@/components/ShareBuilder";
 import { collSlug } from "@/lib/slug";
 import { deleteBeat, signOut } from "./actions";
 import Link from "next/link";
@@ -38,6 +39,7 @@ export default async function Admin({ searchParams }: { searchParams: Promise<{ 
     g.count++; if (b.cover_url && !g.covers.includes(b.cover_url)) g.covers.push(b.cover_url);
   }
   const groups = [...groupMap.values()];
+  const shareBeats: ShareBeat[] = list.map(b => ({ id: b.id, title: b.title, collection: b.collection ?? null }));
   const beatRows: AdminBeat[] = list.map(b => ({
     key: b.id, id: b.id, title: b.title, collection: b.collection ?? null,
     collSlug: b.collection ? collSlug(b.collection) : null,
@@ -59,6 +61,11 @@ export default async function Admin({ searchParams }: { searchParams: Promise<{ 
         <BeatForm beat={editing} tiers={tiers} collections={collections} />
         {editing && <Link href="/admin" className="a-act" style={{marginTop:14}}>Cancel edit</Link>}
       </div>
+
+      <details className="adash">
+        <summary>Envoi d’écoute (lien type untitled) <span>(partage)</span></summary>
+        <div className="adash-body"><ShareBuilder beats={shareBeats} collections={collections} /></div>
+      </details>
 
       <details className="adash">
         <summary>Dossiers / Collections <span>({groups.length})</span></summary>

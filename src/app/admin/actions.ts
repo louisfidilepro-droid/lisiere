@@ -183,3 +183,23 @@ export async function createSendLink(beatId: string, email?: string): Promise<{ 
   }
   return { url, emailed };
 }
+
+/** Crée un lien d'écoute partagé (style untitled/vvault) regroupant plusieurs beats. */
+export async function createShare(
+  beatIds: string[],
+  opts: { title?: string; fullQuality?: boolean; allowDownload?: boolean }
+): Promise<{ url: string }> {
+  await guard();
+  const admin = createAdminClient();
+  const ids = Array.from(new Set(beatIds)).filter(Boolean);
+  if (!ids.length) throw new Error("Aucun beat sélectionné");
+  const { data, error } = await admin.from("shares").insert({
+    title: (opts.title || "").trim() || null,
+    beat_ids: ids,
+    full_quality: !!opts.fullQuality,
+    allow_download: opts.allowDownload !== false,
+  }).select("token").single();
+  if (error) throw new Error(error.message);
+  const base = (process.env.NEXT_PUBLIC_SITE_URL || "").replace(/\/+$/, "");
+  return { url: `${base}/listen/${data.token}` };
+}
